@@ -41,7 +41,7 @@ def run_mpc(env):
         yield [info, t, update]
 
 def main():
-    visualize = 0
+    visualize = 1
     #
     args = arg_parser().parse_args()
     #
@@ -49,7 +49,7 @@ def main():
     plan_dt = 0.1 # Sampling time step for MPC and local planner
     so_path = "./mpc/saved/mpc_v1.so" # saved mpc model (casadi code generation)
     #
-    mpc = MPC(T=plan_T, dt=plan_dt, so_path=so_path)
+    mpc = NeuralControl(T=plan_T, dt=plan_dt, so_path=so_path)
     # NeuralControl(T=plan_T, dt=plan_dt, so_path=so_path)
     # MPC(T=plan_T, dt=plan_dt, so_path=so_path)
     env = DynamicGap(mpc, plan_T, plan_dt)
@@ -87,8 +87,8 @@ def main():
                 plt.plot(data, cols[i], label=labels[i])
             plt.plot(dists, c="black", label="distance")
             plt.ylim(-7.5, 7.5)
-            plt.savefig(f"mpc_vs_gd/gd_new_{k}.png")
-            np.save(f"mpc_vs_gd/gd_new_{k}.npy", quad_pos)
+            plt.savefig(f"results/gd_new_{k}.png")
+            np.save(f"results/gd_new_{k}.npy", quad_pos)
         
 
             

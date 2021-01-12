@@ -37,12 +37,17 @@ class DroneModel(nn.Module):
         for i in range(self.horizon-1):
             self.U[i] = self.U[i+1]
 
+    def set_weights(self, init_actions):
+        for i in range(self.horizon-1):
+            self.U[i] = nn.Parameter(init_actions[i])
+
 class NeuralControl(MPC):
-    def __init__(self, **kwargs):
+    def __init__(self, init_on_mpc = False, **kwargs):
         super(NeuralControl, self).__init__(**kwargs)
-        self.learning_rate = 0.1
-        self.epochs = 10
+        self.learning_rate = 0.5
+        self.epochs = 20
         self.horizon = self._N
+        self.init_on_mpc = init_on_mpc
 
         # prior on control signals
         self.action_prior = torch.tensor([[9.81, 0,0,0]]).repeat(self.horizon,1).double()
@@ -88,7 +93,11 @@ class NeuralControl(MPC):
         """
 
         # use actions from mpc as prior
-        
+        if self.init_on_mpc:
+            control, all_states = super().solve(reference_trajectory)
+            print()
+            print("control mpc", control)
+            self.drone.set_weights(torch.from_numpy(all_states[:, s_dim:]))
 
         # transform reference to useful input
         reference_trajectory = np.array(reference_trajectory)
@@ -135,8 +144,12 @@ class NeuralControl(MPC):
         pred_trajectory = np.hstack((states.detach().numpy(), control_signals))
         # roll control signals for next iteration
         # self.action_prior = torch.from_numpy(np.vstack((control_signals[1], control_signals[1:])))
-        self.drone.roll_model()
-        # print(control_signals[0])
+
+        if self.init_on_mpc:
+            print("control gd", control_signals[0])
+        else:
+            # if the control signals are not set by mpc, just roll them
+            self.drone.roll_model()
         # set it to lower number of epoch after the first iteration
         self.epochs = 10
         return control_signals[0], pred_trajectory
