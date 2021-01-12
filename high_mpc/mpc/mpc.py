@@ -247,15 +247,15 @@ class MPC(object):
             "print_time": False
         }
         
-        # self.solver = ca.nlpsol("solver", "ipopt", nlp_dict, ipopt_options)
+        self.solver = ca.nlpsol("solver", "ipopt", nlp_dict, ipopt_options)
         # # jit (just-in-time compilation)
         # print("Generating shared library........")
         # cname = self.solver.generate_dependencies("mpc_v1.c")  
         # system('gcc -fPIC -shared -O3 ' + cname + ' -o ' + self.so_path) # -O3
         
         # # reload compiled mpc
-        print(self.so_path)
-        self.solver = ca.nlpsol("solver", "ipopt", self.so_path, ipopt_options)
+        # print(self.so_path)
+        # self.solver = ca.nlpsol("solver", "ipopt", self.so_path, ipopt_options)
 
     def solve(self, ref_states):
         # # # # # # # # # # # # # # # #
@@ -275,10 +275,14 @@ class MPC(object):
 
         # Warm initialization
         self.nlp_w0 = list(sol_x0[self._s_dim+self._u_dim:2*(self._s_dim+self._u_dim)]) + list(sol_x0[self._s_dim+self._u_dim:])
-        
-        #
+        # print(self.nlp_w0)
+        # print(len(self.nlp_w0))
+        # #
         x0_array = np.reshape(sol_x0[:-self._s_dim], newshape=(-1, self._s_dim+self._u_dim))
-        
+        # print(len(sol_x0))
+        # for i in range(10):
+        #     traj_test = sol_x0[i*14 : (i+1)*14]
+        #     print([round(s[0],2) for s in traj_test])
         # return optimal action, and a sequence of predicted optimal trajectory.  
         return opt_u, x0_array
     

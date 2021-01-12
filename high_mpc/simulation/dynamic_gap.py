@@ -88,12 +88,22 @@ class DynamicGap(object):
         plan_pend_traj, pred_pend_traj_cart = self.planner.plan(self.pend_state, opt_t)
         pred_pend_traj_cart = np.array(pred_pend_traj_cart)
         
+        
+    
         #
         quad_s0 = self.quad_state.tolist()
         ref_traj = quad_s0 + plan_pend_traj + self.quad_sT
-
+        # print(len(ref_traj))
+        # for i in range(self.mpc._N):
+        #     traj_test = ref_traj[i*13 : (i+1)*13]
+        #     print([round(s,2) for s in traj_test])   
+        # print() 
         # run nonliear model predictive control
+        # print("quad state", [round(s, 2) for s in quad_s0], len(quad_s0))
+        # print("ref trajectory", len(ref_traj), [round(s,2) for s in ref_traj[-10:]])
         quad_act, pred_traj = self.mpc.solve(ref_traj)
+        # print("quad action", [round(s[0], 2) for s in quad_act.tolist()])
+        # print()
 
         # run the actual control command on the quadrotor
         self.quad_state = self.quad.run(quad_act)

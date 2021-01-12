@@ -1,22 +1,19 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-#
-from high_mpc.common.quad_index import *
+import torch
+from .dynamics import *
 
 #
 class Quadrotor_v0(object):
     #
     def __init__(self, dt):
-        self.s_dim = 10
-        self.a_dim = 4
         #
-        self._state = np.zeros(shape=self.s_dim)
+        self._state = np.zeros(shape=s_dim)
         self._state[kQuatW] = 1.0
         #
-        self._actions = np.zeros(shape=self.a_dim)
+        self._actions = np.zeros(shape=a_dim)
 
         #
-        self._gz = 9.81
         self._dt = dt
         self._arm_l = 0.3   # m
         
@@ -41,7 +38,7 @@ class Quadrotor_v0(object):
         # self._t = 0.0
     
     def reset(self):
-        self._state = np.zeros(shape=self.s_dim)
+        self._state = np.zeros(shape=s_dim)
         self._state[kQuatW] = 1.0 # 
         #
         # initialize position, randomly
@@ -69,54 +66,13 @@ class Quadrotor_v0(object):
 
     def run(self, action):
         """
-        Apply the control command on the quadrotor and transits the system to the next state
-        """
-        # rk4 int
-        M = 4
-        DT = self._dt / M
-        #
-        X = self._state
-        for i in range(M):
-            k1 = DT*self._f(X, action)
-            k2 = DT*self._f(X + 0.5*k1, action)
-            k3 = DT*self._f(X + 0.5*k2, action)
-            k4 = DT*self._f(X + k3, action)
-            #
-            X = X + (k1 + 2.0*(k2 + k3) + k4)/6.0
-        #
-        self._state = X
-        return self._state
-
-    def _f(self, state, action):
-        """
-        System dynamics: ds = f(x, u)
-        """
-        thrust, wx, wy, wz = action
-        #
-        dstate = np.zeros(shape=self.s_dim)
-
-        dstate[kPosX:kPosZ+1] = state[kVelX:kVelZ+1]
-
-        qw, qx, qy, qz = self.get_quaternion()
-
-        dstate[kQuatW] = 0.5 * ( -wx*qx - wy*qy - wz*qz )
-        dstate[kQuatX] = 0.5 * (  wx*qw + wz*qy - wy*qz )
-        dstate[kQuatY] = 0.5 * (  wy*qw - wz*qx + wx*qz )
-        dstate[kQuatZ] = 0.5 * (  wz*qw + wy*qx - wx*qy )
-
-        dstate[kVelX] = 2 * ( qw*qy + qx*qz ) * thrust
-        dstate[kVelY] = 2 * ( qy*qz - qw*qx ) * thrust
-        # dstate[kVelZ] = (1 - 2*qx*qx - 2*qy*qy) * thrust - self._gz
-        dstate[kVelZ] = (qw*qw - qx*qx -qy*qy + qz*qz) * thrust - self._gz
-
-        return dstate
-
-    def set_state(self, state):
-        """
         Set the vehicle's state
         """
-        self._state = state
-        
+        torch_state, torch_action = (torch.from_numpy(self._state), torch.from_numpy(action))
+        next_state = dynamics(torch_state, torch_action, self._dt)
+        self._state = next_state.numpy()
+        return self._state
+
     def get_state(self):
         """
         Get the vehicle's state

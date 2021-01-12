@@ -1,3 +1,5 @@
 __pycache__
 .vscode
 saved_policy
+*.zip
+results/
